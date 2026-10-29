@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { type AudioEngine, DEFAULT_VOLUME } from './audio/AudioEngine'
 import { ChordAnalysis } from './components/ChordAnalysis'
 import { ModeVolumeControls, SoundControls } from './components/Controls'
@@ -41,6 +41,8 @@ export default function App({ audioEngine }: Props) {
   /** 和音作成モードで選択中の音を鳴らし続けるか */
   const [sustain, setSustain] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
+  /** 演奏モードでキーボード操作（Enter／Space）により短く押した音を離すタイマー（入力元ごと） */
+  const activateTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   const heldMidiNotes = useMemo(() => sortUniqueMidi(Object.values(held)), [held])
   const analysisTarget = mode === 'chord' ? selectedMidiNotes : heldMidiNotes
@@ -59,7 +61,13 @@ export default function App({ audioEngine }: Props) {
     (midi) => midi < octaveStart || midi > octaveEnd,
   ).length
 
+  const clearActivateTimers = () => {
+    for (const timer of activateTimers.current.values()) clearTimeout(timer)
+    activateTimers.current.clear()
+  }
+
   const releaseAllHeld = () => {
+    clearActivateTimers()
     engine.stopAll()
     setHeld({})
   }
@@ -88,11 +96,14 @@ export default function App({ audioEngine }: Props) {
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') handleHidden()
     }
+    const timers = activateTimers.current
     window.addEventListener('blur', handleWindowBlur)
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
       window.removeEventListener('blur', handleWindowBlur)
       document.removeEventListener('visibilitychange', onVisibility)
+      for (const timer of timers.values()) clearTimeout(timer)
+      timers.clear()
     }
   }, [])
 
@@ -128,9 +139,25 @@ export default function App({ audioEngine }: Props) {
     else run(engine.playNotes([midi], PREVIEW_SEC))
   }
 
+  // 演奏モードのキーボード操作は離す操作がないため、短く押したものとして発音・分析する。
+  // 押している間に繰り返し押されたら、離すまでの時間を延ばす
+  const tapNote = (midi: number) => {
+    const sourceId = `activate:${midi}`
+    const timers = activateTimers.current
+    clearTimeout(timers.get(sourceId))
+    pressNote(midi, sourceId)
+    timers.set(
+      sourceId,
+      setTimeout(() => {
+        timers.delete(sourceId)
+        releaseNote(midi, sourceId)
+      }, PREVIEW_SEC * 1000),
+    )
+  }
+
   const activateKey = (midi: number) => {
     if (mode === 'chord') toggleNote(midi)
-    else run(engine.playNotes([midi], PREVIEW_SEC))
+    else tapNote(midi)
   }
 
   useKeyboardInput({
@@ -192,7 +219,8 @@ export default function App({ audioEngine }: Props) {
   }
 
   const clearSelection = () => {
-    if (sustain) silenceSelection(selectedMidiNotes)
+    // 持続音に加えて、プレビューや「和音を再生」で鳴っている音も止める
+    engine.stopAll()
     setSelectedMidiNotes([])
     setNotice(null)
   }

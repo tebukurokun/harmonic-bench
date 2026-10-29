@@ -17,6 +17,25 @@ const SEMITONE_INTERVAL_NAMES = [
   '長7度',
 ] as const
 
+/**
+ * 半音数（0〜11）から決めた音程名が表す度数（文字の隔たり）。
+ * 6半音は増4度（4度）と減5度（5度）の両方を表す。
+ */
+export const SEMITONE_LETTER_STEPS: readonly (readonly number[])[] = [
+  [0],
+  [1],
+  [1],
+  [2],
+  [2],
+  [3],
+  [3, 4],
+  [4],
+  [5],
+  [5],
+  [6],
+  [6],
+]
+
 export interface IntervalInfo {
   /** 低い音から高い音への半音数 */
   semitones: number
@@ -78,6 +97,18 @@ function absoluteSteps(pitch: SpelledPitch): number {
 
 function absoluteMidi(pitch: SpelledPitch): number {
   return (pitch.octave + 1) * 12 + NATURAL_PITCH_CLASSES[pitch.letter] + pitch.accidental
+}
+
+/**
+ * 2音の綴りが、半音数から決めた音程名と同じ度数になっているか。
+ * 例: E→G♯ は長3度で一致、E→A♭ は綴りの上では減4度なので一致しない。低い音を lower に渡すこと。
+ */
+export function matchesSemitoneName(lower: SpelledPitch, upper: SpelledPitch): boolean {
+  const semitones = absoluteMidi(upper) - absoluteMidi(lower)
+  if (semitones < 0) return false
+  const steps = absoluteSteps(upper) - absoluteSteps(lower)
+  const octaveSteps = Math.floor(semitones / 12) * 7
+  return SEMITONE_LETTER_STEPS[semitones % 12].some((step) => step + octaveSteps === steps)
 }
 
 /**

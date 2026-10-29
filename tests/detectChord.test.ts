@@ -151,6 +151,33 @@ describe('analyzeNotes', () => {
     expect(result.intervals[0].interval.semitones).toBe(7)
   })
 
+  it('2音は、音程名に合うように綴る', () => {
+    const names = (midi: number[]) => {
+      const result = analyzeNotes(midi)
+      return [...result.notes.map((n) => n.name), result.intervals[0].interval.nameJa]
+    }
+    expect(names([64, 68])).toEqual(['E4', 'G♯4', '長3度'])
+    // 低い黒鍵は変化記号の少ないほうで綴る（A♭3–C♭4 ではなく G♯3–B3）
+    expect(names([56, 59])).toEqual(['G♯3', 'B3', '短3度'])
+    expect(names([61, 63])).toEqual(['C♯4', 'D♯4', '長2度'])
+    expect(names([52, 68])).toEqual(['E3', 'G♯4', '長3度＋1オクターブ'])
+    // 暫定表記のままで一致するものは変えない
+    expect(names([60, 66])).toEqual(['C4', 'F♯4', '増4度／減5度'])
+    expect(names([63, 70])).toEqual(['E♭4', 'B♭4', '完全5度'])
+    expect(names([60, 72])).toEqual(['C4', 'C5', '完全8度（1オクターブ）'])
+    expect(analyzeNotes([64, 68]).intervals[0].matchesSpelling).toBe(true)
+  })
+
+  it('判定できない集合では、暫定表記の綴りと合わない音程を区別する', () => {
+    const result = analyzeNotes([60, 64, 68, 71])
+    expect(result.notes.map((n) => n.name)).toEqual(['C4', 'E4', 'A♭4', 'B4'])
+    expect(result.intervals.map((p) => [p.interval.nameJa, p.matchesSpelling])).toEqual([
+      ['長3度', true],
+      ['長3度', false],
+      ['短3度', false],
+    ])
+  })
+
   it('和音判定時は構成音に役割と理論上の綴りを付ける', () => {
     const result = analyzeNotes([60, 63, 67, 70])
     expect(result.kind).toBe('chord')
@@ -172,7 +199,7 @@ describe('analyzeNotes', () => {
   it('判定できない集合は和音名なしで構成音と音程を返す', () => {
     const result = analyzeNotes([60, 61, 62])
     expect(result.kind).toBe('unknown')
-    expect(result.message).toBe('判定できる標準的な和音なし')
+    expect(result.message).toBe('現在対応している和音に一致しません')
     expect(result.notes).toHaveLength(3)
     expect(result.intervals).toHaveLength(2)
     expect(result.provisionalSpelling).toBe(true)

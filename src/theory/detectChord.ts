@@ -45,8 +45,8 @@ export function spellChord(root: NoteSpelling, template: ChordTemplate): NoteSpe
   )
 }
 
-/** 変化記号が少なく、重変化記号を含まない綴りを選ぶ */
-function spellingCost(spellings: readonly NoteSpelling[]): number {
+/** 変化記号が少なく、重変化記号を含まない綴りほど小さい */
+export function spellingCost(spellings: readonly NoteSpelling[]): number {
   return spellings.reduce((cost, s) => {
     const size = Math.abs(s.accidental)
     return cost + size + (size >= 2 ? 10 : 0)

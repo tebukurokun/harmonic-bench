@@ -9,6 +9,7 @@ export function TheoryExplanation({ analysis }: Props) {
   if (analysis.notes.length < 2) return null
   const [primary] = analysis.candidates
   const hasAmbiguousInterval = analysis.intervals.some((pair) => pair.interval.ambiguous)
+  const hasMismatchedSpelling = analysis.intervals.some((pair) => !pair.matchesSpelling)
 
   return (
     <section className="panel" aria-labelledby="theory-heading">
@@ -49,7 +50,10 @@ export function TheoryExplanation({ analysis }: Props) {
             <span className="interval-list__notes">
               {pair.from.name} → {pair.to.name}
             </span>
-            <span className="interval-list__name">{pair.interval.nameJa}</span>
+            <span className="interval-list__name">
+              {pair.interval.nameJa}
+              {!pair.matchesSpelling && '相当'}
+            </span>
             <span className="interval-list__semitones">{pair.interval.semitones}半音</span>
           </li>
         ))}
@@ -58,6 +62,8 @@ export function TheoryExplanation({ analysis }: Props) {
         <p className="note">
           和音の文脈がないため、音程は半音数から判定しています。
           {hasAmbiguousInterval && ' 6半音は、綴りによって増4度とも減5度とも呼ばれます。'}
+          {hasMismatchedSpelling &&
+            ' 「相当」は、表示中の暫定表記の綴りでは別の音程名になることを示します（例: E→A♭ は綴りの上では減4度）。'}
         </p>
       )}
     </section>

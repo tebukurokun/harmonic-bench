@@ -78,6 +78,8 @@ export class WebAudioEngine implements AudioEngine {
   /** リリース中を含め、まだノードが残っている音 */
   private readonly activeVoices = new Set<Voice>()
   private readonly releaseTimers = new Set<ReturnType<typeof setTimeout>>()
+  /** stopAll のたびに進める。初期化待ちの playNotes が、待つ間に止められたかを判定する */
+  private stopGeneration = 0
 
   constructor(options: WebAudioEngineOptions = {}) {
     this.createContext = options.createContext ?? createBrowserAudioContext
@@ -122,7 +124,10 @@ export class WebAudioEngine implements AudioEngine {
   async playNotes(midiNotes: number[], durationSec = 1): Promise<void> {
     const notes = sortUniqueMidi(midiNotes)
     if (notes.length === 0) return
+    const generation = this.stopGeneration
     const ctx = await this.ensureContext()
+    // 初期化を待つ間に stopAll された
+    if (generation !== this.stopGeneration) return
     const startAt = ctx.currentTime + SCHEDULE_AHEAD_SEC
     const voices = notes.map((midi) => this.startVoice(ctx, midi, startAt))
     const holdMs = (Math.max(durationSec - RELEASE_SEC, 0.05) + SCHEDULE_AHEAD_SEC) * 1000
@@ -146,6 +151,7 @@ export class WebAudioEngine implements AudioEngine {
   }
 
   stopAll(): void {
+    this.stopGeneration += 1
     for (const timer of this.releaseTimers) clearTimeout(timer)
     this.releaseTimers.clear()
     this.holders.clear()

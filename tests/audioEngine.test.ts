@@ -212,6 +212,17 @@ describe('WebAudioEngine', () => {
     expect(() => engine.noteOff(60, 'pointer:1')).not.toThrow()
   })
 
+  it('初期化待ちの間に stopAll された playNotes は鳴らさない', async () => {
+    const { ctx, engine } = setup()
+    const pending = engine.playNotes([60, 64, 67])
+    engine.stopAll()
+    await pending
+    expect(ctx.oscillators).toHaveLength(0)
+    // 止めたあとの再生は鳴る
+    await engine.playNotes([60])
+    expect(ctx.sounding()).toHaveLength(1)
+  })
+
   it('連打してもノードが残らない', async () => {
     const { ctx, engine } = setup()
     for (let i = 0; i < 50; i++) {

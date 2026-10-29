@@ -53,7 +53,7 @@ export const CHORD_TEMPLATES: readonly ChordTemplate[] = [
     intervals: [0, 4, 7, 11],
     letterSteps: [0, 2, 4, 6],
     degreeLabels: ['根音', '長3度', '完全5度', '長7度'],
-    descriptionJa: '長三和音に長7度を加えた和音。根音と半音でぶつかる長7度が柔らかな彩りを添える。',
+    descriptionJa: '長三和音に長7度を加えた和音。第7音と、そのすぐ上の根音との間は半音になる。',
   },
   {
     id: 'minor7',

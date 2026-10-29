@@ -129,8 +129,26 @@ describe('App: 和音作成モード（初期モード）', () => {
   it('判定できない集合には和音名を付けない', async () => {
     const { user } = setup()
     await selectNotes(user, ['C4', 'C♯4 / D♭4', 'D4'])
-    expect(within(result()).getByText('判定できる標準的な和音なし')).toBeInTheDocument()
+    expect(within(result()).getByText('現在対応している和音に一致しません')).toBeInTheDocument()
     expect(screen.getAllByRole('row')).toHaveLength(4)
+  })
+
+  it('2音の音名は音程名に合わせて綴る（E4 と A♭4 は E4 → G♯4 の長3度）', async () => {
+    const { user } = setup()
+    await selectNotes(user, ['E4', 'G♯4 / A♭4'])
+    expect(within(result()).getByText('長3度')).toBeInTheDocument()
+    expect(within(result()).getByText('E4 → G♯4（4半音）')).toBeInTheDocument()
+  })
+
+  it('判定できない集合で、暫定表記の綴りと合わない音程には「相当」を付ける', async () => {
+    const { user } = setup()
+    // C E A♭ B（暫定表記）。E→A♭ と A♭→B は綴りの上では減4度・増2度
+    await selectNotes(user, ['C4', 'E4', 'G♯4 / A♭4', 'B4'])
+    const theory = screen.getByRole('region', { name: '解説' })
+    expect(within(theory).getByText('長3度')).toBeInTheDocument()
+    expect(within(theory).getByText('長3度相当')).toBeInTheDocument()
+    expect(within(theory).getByText('短3度相当')).toBeInTheDocument()
+    expect(within(theory).getByText(/「相当」は/)).toBeInTheDocument()
   })
 
   it('和音を再生ボタンで選択音を同時に再生し、全解除で空にする', async () => {
@@ -145,6 +163,8 @@ describe('App: 和音作成モード（初期モード）', () => {
     expect(engine.playNotes).toHaveBeenLastCalledWith([64, 67, 72], 1)
 
     await user.click(screen.getByRole('button', { name: '全解除' }))
+    // 再生中の和音も止める
+    expect(engine.stopAll).toHaveBeenCalled()
     expect(key('E4')).toHaveAttribute('aria-pressed', 'false')
     expect(play).toBeDisabled()
   })
@@ -158,13 +178,8 @@ describe('App: 和音作成モード（初期モード）', () => {
     expect(engine.noteOff).toHaveBeenCalledTimes(3)
     expect(engine.noteOn).toHaveBeenCalledTimes(3)
 
-    engine.noteOff.mockClear()
     await user.click(screen.getByRole('button', { name: '全解除' }))
-    expect(engine.noteOff.mock.calls).toEqual([
-      [60, 'selection'],
-      [64, 'selection'],
-      [67, 'selection'],
-    ])
+    expect(engine.stopAll).toHaveBeenCalled()
   })
 
   it('音色を変更しても選択と判定結果は変わらない', async () => {
@@ -260,6 +275,43 @@ describe('App: 演奏モード', () => {
     await user.keyboard('{/x}')
     expect(engine.noteOff).toHaveBeenCalledWith(62, 'key:KeyX')
     expect(key('D4')).not.toHaveClass('is-held')
+  })
+
+  it('キーボード操作（Enter）で押した鍵盤は、短く押したものとして発音・分析する', async () => {
+    const { engine } = await performMode()
+    vi.useFakeTimers()
+    try {
+      fireEvent.click(key('E4'), { detail: 0 })
+      expect(engine.noteOn).toHaveBeenCalledWith(64, 'activate:64')
+      expect(engine.playNotes).not.toHaveBeenCalled()
+      expect(key('E4')).toHaveClass('is-held')
+      expect(within(result()).getByText('E4')).toBeInTheDocument()
+
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+      expect(engine.noteOff).toHaveBeenCalledWith(64, 'activate:64')
+      expect(key('E4')).not.toHaveClass('is-held')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('キーボード操作で押した鍵盤も、オクターブ切替で止まり、あとから離し直さない', async () => {
+    const { engine } = await performMode()
+    vi.useFakeTimers()
+    try {
+      fireEvent.click(key('E4'), { detail: 0 })
+      fireEvent.click(screen.getByRole('button', { name: '1オクターブ上げる' }))
+      expect(engine.stopAll).toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'E5' })).not.toHaveClass('is-held')
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+      expect(engine.noteOff).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('ウィンドウのフォーカスを失うと押下中の音を止める', async () => {

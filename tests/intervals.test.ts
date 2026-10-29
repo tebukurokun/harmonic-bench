@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { CHORD_TEMPLATES } from '../src/theory/chordTemplates'
-import { degreeSymbol, intervalBetween, intervalFromSemitones } from '../src/theory/intervals'
+import {
+  degreeSymbol,
+  intervalBetween,
+  intervalFromSemitones,
+  matchesSemitoneName,
+} from '../src/theory/intervals'
 import { spellMidi, spellWithLetter } from '../src/theory/noteSpelling'
 import type { Letter } from '../src/types/music'
 
@@ -63,6 +68,20 @@ describe('intervalBetween（綴りを考慮）', () => {
 
   it('異名同音の同音は減2度などとして区別する', () => {
     expect(intervalBetween(pitch(60, 6), pitch(60, 0)).nameJa).toBe('減2度')
+  })
+})
+
+describe('matchesSemitoneName（綴りと半音数による音程名の一致）', () => {
+  it('綴りの度数が半音数による音程名と同じなら一致する', () => {
+    expect(matchesSemitoneName(pitch(64, 2), pitch(68, 4))).toBe(true) // E→G♯ 長3度
+    expect(matchesSemitoneName(pitch(64, 2), pitch(68, 5))).toBe(false) // E→A♭ 減4度
+    expect(matchesSemitoneName(pitch(60, 0), pitch(72, 0))).toBe(true) // C→C 1オクターブ
+    expect(matchesSemitoneName(pitch(52, 2), pitch(68, 4))).toBe(true) // 長3度＋1オクターブ
+  })
+
+  it('6半音は増4度・減5度のどちらでも一致する', () => {
+    expect(matchesSemitoneName(pitch(60, 0), pitch(66, 3))).toBe(true)
+    expect(matchesSemitoneName(pitch(60, 0), pitch(66, 4))).toBe(true)
   })
 })
 
