@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { type AudioEngine, DEFAULT_VOLUME } from './audio/AudioEngine'
 import { ChordAnalysis } from './components/ChordAnalysis'
 import { ModeVolumeControls, SoundControls } from './components/Controls'
@@ -20,6 +20,8 @@ export const MAX_SELECTED_NOTES = 12
 const PREVIEW_SEC = 0.5
 const CHORD_SEC = 1
 const NO_NOTES: ReadonlySet<number> = new Set()
+/** 和音作成モードで選択音を鳴らし続けるときの入力元 */
+const SELECTION_SOURCE = 'selection'
 
 interface Props {
   /** テストで差し替えるための Audio Engine */
@@ -35,6 +37,8 @@ export default function App({ audioEngine }: Props) {
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
   /** 演奏モードで押下中の音（入力元 → MIDI番号） */
   const [held, setHeld] = useState<Record<string, number>>({})
+  /** 和音作成モードで選択中の音を鳴らし続けるか */
+  const [sustain, setSustain] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
 
   const heldMidiNotes = useMemo(() => sortUniqueMidi(Object.values(held)), [held])
@@ -54,22 +58,37 @@ export default function App({ audioEngine }: Props) {
     setHeld({})
   }
 
-  // タブ非表示・フォーカス喪失時に押しっぱなしの音を止める
+  const soundSelection = (notes: readonly number[]) => {
+    for (const midi of notes) run(engine.noteOn(midi, SELECTION_SOURCE))
+  }
+
+  const silenceSelection = (notes: readonly number[]) => {
+    for (const midi of notes) engine.noteOff(midi, SELECTION_SOURCE)
+  }
+
+  // フォーカス喪失時は押しっぱなしの演奏音だけを止める（選択音の持続は意図した発音なので続ける）
+  const handleWindowBlur = useEffectEvent(() => {
+    if (mode === 'perform') releaseAllHeld()
+  })
+
+  // タブが非表示になったら、持続音も含めてすべて止める。
+  // 戻ったときに自動で鳴り出さないよう、鳴らしていた場合は「鳴らし続ける」をオフにする
+  const handleHidden = useEffectEvent(() => {
+    releaseAllHeld()
+    if (mode === 'chord' && sustain && selectedMidiNotes.length > 0) setSustain(false)
+  })
+
   useEffect(() => {
-    const stop = () => {
-      engine.stopAll()
-      setHeld({})
-    }
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') stop()
+      if (document.visibilityState === 'hidden') handleHidden()
     }
-    window.addEventListener('blur', stop)
+    window.addEventListener('blur', handleWindowBlur)
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      window.removeEventListener('blur', stop)
+      window.removeEventListener('blur', handleWindowBlur)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [engine])
+  }, [])
 
   const pressNote = (midi: number, sourceId: string) => {
     setHeld((prev) => ({ ...prev, [sourceId]: midi }))
@@ -90,6 +109,7 @@ export default function App({ audioEngine }: Props) {
     if (selectedSet.has(midi)) {
       setSelectedMidiNotes(selectedMidiNotes.filter((note) => note !== midi))
       setNotice(null)
+      if (sustain) silenceSelection([midi])
       return
     }
     if (selectedMidiNotes.length >= MAX_SELECTED_NOTES) {
@@ -98,7 +118,8 @@ export default function App({ audioEngine }: Props) {
     }
     setSelectedMidiNotes(sortUniqueMidi([...selectedMidiNotes, midi]))
     setNotice(null)
-    run(engine.playNotes([midi], PREVIEW_SEC))
+    if (sustain) soundSelection([midi])
+    else run(engine.playNotes([midi], PREVIEW_SEC))
   }
 
   const activateKey = (midi: number) => {
@@ -120,6 +141,7 @@ export default function App({ audioEngine }: Props) {
     releaseAllHeld()
     setNotice(null)
     setMode(next)
+    if (next === 'chord' && sustain) soundSelection(selectedMidiNotes)
   }
 
   const shiftOctave = (direction: -1 | 1) => {
@@ -133,6 +155,11 @@ export default function App({ audioEngine }: Props) {
   const changeTimbre = (next: Timbre) => {
     setTimbre(next)
     engine.setTimbre(next)
+    // 鳴らし続けている音は、新しい音色で鳴らし直す
+    if (mode === 'chord' && sustain) {
+      silenceSelection(selectedMidiNotes)
+      soundSelection(selectedMidiNotes)
+    }
   }
 
   const changeVolume = (next: number) => {
@@ -142,10 +169,24 @@ export default function App({ audioEngine }: Props) {
 
   const playChord = () => {
     if (selectedMidiNotes.length === 0) return
-    run(engine.playNotes(selectedMidiNotes, CHORD_SEC))
+    if (sustain) {
+      // 持続中は全音をそろえて鳴らし直す（プラック音色などの減衰した音を再度立ち上げる）
+      silenceSelection(selectedMidiNotes)
+      soundSelection(selectedMidiNotes)
+    } else {
+      run(engine.playNotes(selectedMidiNotes, CHORD_SEC))
+    }
+  }
+
+  const toggleSustain = () => {
+    const next = !sustain
+    setSustain(next)
+    if (next) soundSelection(selectedMidiNotes)
+    else silenceSelection(selectedMidiNotes)
   }
 
   const clearSelection = () => {
+    if (sustain) silenceSelection(selectedMidiNotes)
     setSelectedMidiNotes([])
     setNotice(null)
   }
@@ -178,7 +219,9 @@ export default function App({ audioEngine }: Props) {
 
           <p className="mode-hint">
             {mode === 'chord'
-              ? '和音作成モード: 鍵盤をタップするたびに音を選択／解除します。'
+              ? `和音作成モード: 鍵盤をタップするたびに音を選択／解除します。${
+                  sustain ? '選択中の音は鳴り続けます。' : '追加した音は短く鳴ります。'
+                }`
               : '演奏モード: 鍵盤を押している間だけ音が鳴ります。複数の鍵盤を同時に押せます。'}
           </p>
 
@@ -200,6 +243,17 @@ export default function App({ audioEngine }: Props) {
 
           {mode === 'chord' && (
             <div className="chord-actions">
+              <button
+                type="button"
+                className="button button--toggle"
+                aria-pressed={sustain}
+                onClick={toggleSustain}
+              >
+                鳴らし続ける
+                <span className="button__state" aria-hidden="true">
+                  {sustain ? 'オン' : 'オフ'}
+                </span>
+              </button>
               <button
                 type="button"
                 className="button button--primary"

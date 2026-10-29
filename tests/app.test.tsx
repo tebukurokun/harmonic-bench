@@ -1,11 +1,11 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, type Mocked, vi } from 'vitest'
 import App from '../src/App'
 import { type AudioEngine, AudioUnavailableError } from '../src/audio/AudioEngine'
 
-function createMockEngine(overrides: Partial<AudioEngine> = {}) {
-  const engine = {
+function createMockEngine(overrides: Partial<Mocked<AudioEngine>> = {}): Mocked<AudioEngine> {
+  return {
     unlock: vi.fn(async () => {}),
     noteOn: vi.fn(async () => {}),
     noteOff: vi.fn(),
@@ -16,7 +16,6 @@ function createMockEngine(overrides: Partial<AudioEngine> = {}) {
     dispose: vi.fn(async () => {}),
     ...overrides,
   }
-  return engine satisfies AudioEngine
 }
 
 function setup(engine = createMockEngine()) {
@@ -46,15 +45,46 @@ describe('App: 和音作成モード（初期モード）', () => {
     expect(screen.getByRole('button', { name: '和音作成' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('鍵盤をクリックすると選択がトグルし、追加時だけプレビュー音を鳴らす', async () => {
+  it('初期状態では、選択中の音を鳴らし続け、解除するとその音だけ止める', async () => {
     const { user, engine } = setup()
+    const sustain = screen.getByRole('button', { name: '鳴らし続ける' })
+    expect(sustain).toHaveAttribute('aria-pressed', 'true')
+
     await user.click(key('C4'))
+    await user.click(key('E4'))
     expect(key('C4')).toHaveAttribute('aria-pressed', 'true')
-    expect(engine.playNotes).toHaveBeenLastCalledWith([60], expect.any(Number))
+    expect(engine.noteOn).toHaveBeenCalledWith(60, 'selection')
+    expect(engine.noteOn).toHaveBeenCalledWith(64, 'selection')
+    expect(engine.playNotes).not.toHaveBeenCalled()
 
     await user.click(key('C4'))
     expect(key('C4')).toHaveAttribute('aria-pressed', 'false')
+    expect(engine.noteOff).toHaveBeenCalledWith(60, 'selection')
+    expect(engine.noteOff).not.toHaveBeenCalledWith(64, 'selection')
+  })
+
+  it('「鳴らし続ける」をオフにすると選択音を止め、以降は追加時だけ短く鳴らす', async () => {
+    const { user, engine } = setup()
+    await selectNotes(user, ['C4', 'E4'])
+    await user.click(screen.getByRole('button', { name: '鳴らし続ける' }))
+    expect(screen.getByRole('button', { name: '鳴らし続ける' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(engine.noteOff).toHaveBeenCalledWith(60, 'selection')
+    expect(engine.noteOff).toHaveBeenCalledWith(64, 'selection')
+
+    engine.noteOn.mockClear()
+    await user.click(key('G4'))
+    expect(engine.playNotes).toHaveBeenLastCalledWith([67], expect.any(Number))
+    await user.click(key('G4'))
     expect(engine.playNotes).toHaveBeenCalledTimes(1)
+    expect(engine.noteOn).not.toHaveBeenCalled()
+
+    // オンに戻すと選択中の音がまた鳴る
+    await user.click(screen.getByRole('button', { name: '鳴らし続ける' }))
+    expect(engine.noteOn).toHaveBeenCalledWith(60, 'selection')
+    expect(engine.noteOn).toHaveBeenCalledWith(64, 'selection')
   })
 
   it('Cm7 を選ぶと和音名・周波数・構成音の役割を表示する', async () => {
@@ -92,6 +122,7 @@ describe('App: 和音作成モード（初期モード）', () => {
 
   it('和音を再生ボタンで選択音を同時に再生し、全解除で空にする', async () => {
     const { user, engine } = setup()
+    await user.click(screen.getByRole('button', { name: '鳴らし続ける' }))
     const play = screen.getByRole('button', { name: '和音を再生' })
     expect(play).toBeDisabled()
 
@@ -105,11 +136,32 @@ describe('App: 和音作成モード（初期モード）', () => {
     expect(play).toBeDisabled()
   })
 
+  it('鳴らし続けているときは、和音を再生で全音を鳴らし直し、全解除で止める', async () => {
+    const { user, engine } = setup()
+    await selectNotes(user, ['C4', 'E4', 'G4'])
+    engine.noteOn.mockClear()
+    await user.click(screen.getByRole('button', { name: '和音を再生' }))
+    expect(engine.playNotes).not.toHaveBeenCalled()
+    expect(engine.noteOff).toHaveBeenCalledTimes(3)
+    expect(engine.noteOn).toHaveBeenCalledTimes(3)
+
+    engine.noteOff.mockClear()
+    await user.click(screen.getByRole('button', { name: '全解除' }))
+    expect(engine.noteOff.mock.calls).toEqual([
+      [60, 'selection'],
+      [64, 'selection'],
+      [67, 'selection'],
+    ])
+  })
+
   it('音色を変更しても選択と判定結果は変わらない', async () => {
     const { user, engine } = setup()
     await selectNotes(user, ['C4', 'E4', 'G4'])
+    engine.noteOn.mockClear()
     await user.selectOptions(screen.getByLabelText('音色'), 'organ')
     expect(engine.setTimbre).toHaveBeenCalledWith('organ')
+    // 鳴らし続けている音を新しい音色で鳴らし直す
+    expect(engine.noteOn).toHaveBeenCalledTimes(3)
     expect(within(result()).getByText('C')).toBeInTheDocument()
     expect(key('E4')).toHaveAttribute('aria-pressed', 'true')
   })
@@ -146,7 +198,7 @@ describe('App: 和音作成モード（初期モード）', () => {
     const { user, engine } = setup()
     await user.keyboard('{z>5/}') // Z を押しっぱなし（リピート）にしてから離す
     expect(key('C4')).toHaveAttribute('aria-pressed', 'true')
-    expect(engine.playNotes).toHaveBeenCalledTimes(1)
+    expect(engine.noteOn).toHaveBeenCalledTimes(1)
     await user.keyboard('q')
     expect(key('C5')).toHaveAttribute('aria-pressed', 'true')
   })
@@ -213,18 +265,50 @@ describe('App: 演奏モード', () => {
     await user.click(screen.getByRole('button', { name: '演奏' }))
     expect(engine.stopAll).toHaveBeenCalled()
     expect(within(result()).queryByText('A4')).not.toBeInTheDocument()
+    engine.noteOn.mockClear()
     await user.click(screen.getByRole('button', { name: '和音作成' }))
     expect(key('A4')).toHaveAttribute('aria-pressed', 'true')
+    // 和音作成モードに戻ると、選択中の音をまた鳴らし続ける
+    expect(engine.noteOn).toHaveBeenCalledWith(69, 'selection')
+  })
+})
+
+describe('App: フォーカス喪失・タブ非表示', () => {
+  function setVisibility(state: DocumentVisibilityState) {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: state })
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+  }
+
+  it('和音作成モードの持続音は、ウィンドウのフォーカスを失っても止めない', async () => {
+    const { user, engine } = setup()
+    await user.click(key('C4'))
+    act(() => {
+      window.dispatchEvent(new Event('blur'))
+    })
+    expect(engine.stopAll).not.toHaveBeenCalled()
+  })
+
+  it('タブが非表示になると持続音を止め、「鳴らし続ける」をオフにする', async () => {
+    const { user, engine } = setup()
+    await user.click(key('C4'))
+    setVisibility('hidden')
+    expect(engine.stopAll).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: '鳴らし続ける' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    setVisibility('visible')
   })
 })
 
 describe('App: 音声エラー・音量', () => {
   it('AudioContext を使えなくても画面は動作し、エラーを表示する', async () => {
-    const engine = createMockEngine({
-      playNotes: vi.fn(async () => {
-        throw new AudioUnavailableError()
-      }),
+    const fail = vi.fn(async () => {
+      throw new AudioUnavailableError()
     })
+    const engine = createMockEngine({ noteOn: fail, playNotes: fail })
     const { user } = setup(engine)
     await selectNotes(user, ['C4', 'E4', 'G4'])
     expect(await screen.findByRole('alert')).toHaveTextContent('Web Audio API を利用できません')

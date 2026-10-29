@@ -364,6 +364,31 @@ fieldset {
   color: var(--accent-text);
 }
 
+.button--toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.button__state {
+  min-width: 2.5em;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* オン状態: 色に加えて表示文字（オン／オフ）でも示す */
+.button--toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+
+.button--toggle[aria-pressed="true"] .button__state {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
 .messages {
   margin-top: 12px;
 }
@@ -593,6 +618,11 @@ fieldset {
 
   .chord-actions .button {
     flex: 1 1 0;
+  }
+
+  .chord-actions .button--toggle {
+    flex-basis: 100%;
+    justify-content: center;
   }
 
   .chord-actions__count {
