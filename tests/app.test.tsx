@@ -13,6 +13,7 @@ function createMockEngine(overrides: Partial<Mocked<AudioEngine>> = {}): Mocked<
     setTimbre: vi.fn(),
     setVolume: vi.fn(),
     stopAll: vi.fn(),
+    readWaveform: vi.fn(() => null),
     dispose: vi.fn(async () => {}),
     ...overrides,
   }
@@ -331,5 +332,15 @@ describe('App: 音声エラー・音量', () => {
     const { engine } = setup()
     fireEvent.change(screen.getByLabelText('音量'), { target: { value: '0' } })
     expect(engine.setVolume).toHaveBeenLastCalledWith(0)
+  })
+})
+
+describe('App: 波形表示', () => {
+  it('波形の表示幅を、分析対象の最低音の3周期分にする', async () => {
+    const { user } = setup()
+    expect(screen.getByRole('img', { name: /波形/ })).toBeInTheDocument()
+    expect(screen.getByText(/表示幅 20\.0 ms/)).toBeInTheDocument()
+    await user.click(key('A4'))
+    expect(screen.getByText(/表示幅 6\.8 ms/)).toBeInTheDocument()
   })
 })

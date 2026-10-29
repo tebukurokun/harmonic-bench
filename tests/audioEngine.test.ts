@@ -38,9 +38,20 @@ class FakeOscillator extends FakeNode {
   })
 }
 
+class FakeAnalyser extends FakeNode {
+  fftSize = 2048
+  /** 出力中の信号として返す値 */
+  signal = 0
+  getFloatTimeDomainData = vi.fn((buffer: Float32Array) => {
+    buffer.fill(this.signal)
+  })
+}
+
 class FakeAudioContext {
   state: AudioContextState = 'suspended'
   currentTime = 0
+  sampleRate = 48000
+  analysers: FakeAnalyser[] = []
   destination = new FakeNode()
   oscillators: FakeOscillator[] = []
   gains: (FakeNode & { gain: FakeParam })[] = []
@@ -75,6 +86,11 @@ class FakeAudioContext {
       attack: new FakeParam(),
       release: new FakeParam(),
     })
+  }
+  createAnalyser() {
+    const analyser = new FakeAnalyser()
+    this.analysers.push(analyser)
+    return analyser
   }
   /** 停止予定のオシレーターの onended を発火させる */
   finishStopped() {
@@ -238,6 +254,23 @@ describe('WebAudioEngine', () => {
     await expect(engine.noteOn(60, 'pointer:1')).rejects.toBeInstanceOf(AudioUnavailableError)
     await expect(engine.playNotes([60])).rejects.toBeInstanceOf(AudioUnavailableError)
     expect(() => engine.noteOff(60, 'pointer:1')).not.toThrow()
+  })
+
+  it('初期化前の波形は null で、初期化後は出力の波形とサンプリング周波数を返す', async () => {
+    const { ctx, engine } = setup()
+    expect(engine.readWaveform()).toBeNull()
+    await engine.unlock()
+    const [analyser] = ctx.analysers
+    // 波形表示用の分岐はどこにも接続せず、出力に影響しない
+    expect(analyser.connections).toBe(0)
+    analyser.signal = 0.25
+    const waveform = engine.readWaveform()
+    expect(waveform?.sampleRate).toBe(48000)
+    expect(waveform?.samples.length).toBe(analyser.fftSize)
+    expect(waveform?.samples.every((s) => s === 0.25)).toBe(true)
+    await engine.dispose()
+    expect(analyser.disconnect).toHaveBeenCalled()
+    expect(engine.readWaveform()).toBeNull()
   })
 
   it('dispose で AudioContext を閉じ、再利用時は作り直す', async () => {

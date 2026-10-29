@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { keyHint } from '../hooks/useKeyboardInput'
 import { defaultPitchName, keyLabel } from '../theory/noteSpelling'
 import { isBlackKey } from '../theory/pitch'
@@ -17,6 +18,8 @@ interface Props {
   onPress: (midi: number, sourceId: string) => void
   onRelease: (midi: number, sourceId: string) => void
   onActivate: (midi: number) => void
+  /** パネルの鍵盤の上にはめ込む表示部 */
+  display?: ReactNode
 }
 
 export function PianoKeyboard({
@@ -29,6 +32,7 @@ export function PianoKeyboard({
   onPress,
   onRelease,
   onActivate,
+  display,
 }: Props) {
   const keys = Array.from({ length: VISIBLE_KEY_COUNT }, (_, offset) => octaveStart + offset)
   const whiteCount = keys.filter((midi) => !isBlackKey(midi)).length
@@ -63,6 +67,7 @@ export function PianoKeyboard({
 
   return (
     <div className="keyboard-case">
+      {display}
       <div className="keyboard-scroll">
         <fieldset
           className="keyboard"

@@ -3,6 +3,7 @@ import { type AudioEngine, DEFAULT_VOLUME } from './audio/AudioEngine'
 import { ChordAnalysis } from './components/ChordAnalysis'
 import { ModeVolumeControls, SoundControls } from './components/Controls'
 import { NoteDetails } from './components/NoteDetails'
+import { Oscilloscope } from './components/Oscilloscope'
 import { PianoKeyboard, VISIBLE_KEY_COUNT } from './components/PianoKeyboard'
 import { TheoryExplanation } from './components/TheoryExplanation'
 import { useAudioEngine } from './hooks/useAudioEngine'
@@ -240,6 +241,7 @@ export default function App({ audioEngine }: Props) {
             onPress={pressNote}
             onRelease={releaseNote}
             onActivate={activateKey}
+            display={<Oscilloscope engine={engine} midiNotes={analysisTarget} />}
           />
 
           <p className="key-guide">

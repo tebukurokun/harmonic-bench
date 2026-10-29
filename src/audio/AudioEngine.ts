@@ -15,7 +15,15 @@ export interface AudioEngine {
   setVolume(volume: number): void
   /** 押下中の音・和音再生中の音をすべて止める */
   stopAll(): void
+  /** 出力中の波形（直近のサンプル）。音声を初期化する前は null */
+  readWaveform(): Waveform | null
   dispose(): Promise<void>
+}
+
+export interface Waveform {
+  /** -1〜1 の時間領域のサンプル。呼び出しごとに同じ配列を上書きする */
+  samples: Float32Array<ArrayBuffer>
+  sampleRate: number
 }
 
 export class AudioUnavailableError extends Error {
@@ -45,6 +53,8 @@ export interface WebAudioEngineOptions {
 export const DEFAULT_VOLUME = 0.4
 /** 和音再生の開始時刻を揃えるための先読み */
 const SCHEDULE_AHEAD_SEC = 0.01
+/** 波形表示用に取り出すサンプル数（96kHz でも約85ms分） */
+const WAVEFORM_SIZE = 8192
 
 function clampVolume(volume: number): number {
   return Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 0))
@@ -55,6 +65,8 @@ export class WebAudioEngine implements AudioEngine {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private limiter: DynamicsCompressorNode | null = null
+  private analyser: AnalyserNode | null = null
+  private waveform: Waveform | null = null
   private starting: Promise<AudioContext> | null = null
   private timbre: Timbre
   private volume: number
@@ -141,14 +153,23 @@ export class WebAudioEngine implements AudioEngine {
     for (const voice of this.activeVoices) voice.release()
   }
 
+  readWaveform(): Waveform | null {
+    if (!this.analyser || !this.waveform) return null
+    this.analyser.getFloatTimeDomainData(this.waveform.samples)
+    return this.waveform
+  }
+
   async dispose(): Promise<void> {
     this.stopAll()
     const ctx = this.ctx
     this.master?.disconnect()
     this.limiter?.disconnect()
+    this.analyser?.disconnect()
     this.ctx = null
     this.master = null
     this.limiter = null
+    this.analyser = null
+    this.waveform = null
     this.activeVoices.clear()
     if (ctx && ctx.state !== 'closed') await ctx.close()
   }
@@ -193,9 +214,15 @@ export class WebAudioEngine implements AudioEngine {
       limiter.release.setValueAtTime(0.2, ctx.currentTime)
       master.connect(limiter)
       limiter.connect(ctx.destination)
+      // 実際に出力している音（リミッター通過後）を波形表示用に分岐する
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = WAVEFORM_SIZE
+      limiter.connect(analyser)
       this.ctx = ctx
       this.master = master
       this.limiter = limiter
+      this.analyser = analyser
+      this.waveform = { samples: new Float32Array(WAVEFORM_SIZE), sampleRate: ctx.sampleRate }
     }
     const ctx = this.ctx
     if (ctx.state !== 'running') await ctx.resume()
