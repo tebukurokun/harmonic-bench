@@ -11,3 +11,12 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 )
+
+// PWA: オフラインで起動できるようにする。dist/sw.js はビルド時に生成するので、本番ビルドでだけ登録する
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error: unknown) => {
+      console.warn('Service Worker を登録できませんでした', error)
+    })
+  })
+}

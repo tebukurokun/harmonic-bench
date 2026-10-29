@@ -77,6 +77,12 @@ tests/           Vitest のテスト
 `npm run build` で生成される `dist/` は静的ファイルのみで構成されており、Cloudflare Pages などの静的ホスティングにそのまま配置できます（ビルドコマンド `npm run build`、出力ディレクトリ `dist`）。
 iOS Safari などでは音声再生に HTTPS（または localhost）が必要です。
 
+### OGP・PWA
+
+- SNS などで共有したときのカード表示（OGP / Twitter Card）に対応しています。画像は `public/og-image.png`（1200×630）です。
+- PWA としてホーム画面に追加でき、一度開いたあとはオフラインでも起動します。本番ビルドでは `vite.config.ts` のプラグインが `dist/` の全ファイルを事前キャッシュする `dist/sw.js` を生成します（開発サーバーでは Service Worker を登録しません）。ページはネットワークを優先し、オフラインのときだけキャッシュを使います。
+- アイコンと OGP 画像の元データは `brand/`（と `public/favicon.svg`）の SVG です。変更したら `./scripts/render-images.sh` で PNG・ICO を書き出し直してください（`rsvg-convert` と ImageMagick が必要。OGP 画像の文字は macOS のフォントで描きます）。
+
 ## 動作上の制約・既知の問題
 
 - 音色はすべて合成音です。「プラック／ピアノ風」も実際のピアノ音ではありません。また減衰する音色のため、「鳴らし続ける」がオンでも数秒で聞こえなくなります（「和音を再生」で鳴らし直せます）。

@@ -8,6 +8,7 @@ DAW や本格的なピアノ音源ではなく、**学習・探索用の軽量�
 ## 現在の状態
 
 - MVP（v1）は実装済み。v4 の候補から、出力波形の表示（オシロスコープ）を先に実装した。それ以外の v2 以降は未着手。
+- OGP と PWA（ホーム画面への追加・オフライン起動）に対応済み。ヘッドレス Chrome で、Service Worker の登録・事前キャッシュ・オフラインでの再読み込み・マニフェストのエラーなしを確認済み。
 - 未完了: スピーカーでの試聴確認（クリックノイズの有無を含む）と、iOS Safari / Android Chrome での確認。デスクトップの Safari・Firefox では動作を確認済み。ヘッドレス Chrome では、出力信号のレベルを測って発音・停止・音量・ノード解放を確認済み。
 - 公開URL: https://harmonic-bench.tebukuro.me/ （Cloudflare で配信。2026-10-29 に公開）
 - git の既定ブランチは `master`。
@@ -51,7 +52,10 @@ src/
 ├── components/   PianoKeyboard / KeyboardKey / Oscilloscope / Controls / ChordAnalysis / NoteDetails /
 │                 TheoryExplanation
 ├── types/music.ts
+├── sw.js         Service Worker のテンプレート（ビルド時に dist/sw.js を生成）
 └── App.tsx       状態とイベントハンドラ
+brand/            アイコン（maskable）と OGP 画像の元の SVG
+scripts/render-images.sh  brand/ と public/favicon.svg から public/ の PNG・ICO を書き出す
 ```
 
 ## 設計ルール
@@ -225,6 +229,10 @@ interface AudioEngine {
 - ローカルで完結する。API キーやサーバー通信は不要で、個人情報も集めない。
 - HTTPS（または localhost）で配信する。iOS Safari などでは音声再生に必要。
 - ライセンスが不明なサンプル音源は組み込まない。
+- OGP: `index.html` に OGP と Twitter Card（`summary_large_image`）のメタタグを置く。URL は公開URLの絶対パス。画像 `public/og-image.png`（1200×630）はタイトル・判定表示（Cmaj7 と波形）・鍵盤の度数表示だけで、説明文は入れない。
+- PWA: `public/manifest.webmanifest`（`display: standalone`、アイコン 192・512・maskable 512・SVG）と apple-touch-icon（180）。favicon は SVG と、SVG を使えないブラウザ向けの `favicon.ico`。
+- Service Worker: `vite.config.ts` の `serviceWorker()` プラグインが、ビルド後の `dist/` の全ファイル（`sw.js`・`og-image.png`・`_` で始まるファイルを除く）を事前キャッシュ一覧として `src/sw.js` に埋め込み、`dist/sw.js` を書き出す。版はファイルの中身のハッシュ。`index.html` は `/` としてキャッシュする（Cloudflare が `/index.html` を `/` へリダイレクトするため）。ページ遷移はネットワーク優先でオフライン時だけキャッシュ、それ以外はキャッシュ優先。登録は `main.tsx` で本番ビルドのときだけ行う。依存（vite-plugin-pwa 等）は増やさない。
+- アイコンや OGP 画像を変えたら、`brand/` の SVG を直して `./scripts/render-images.sh` を実行する（rsvg-convert と ImageMagick が必要）。
 - 低遅延は保証しない（ブラウザ・端末に依存する）。React state と音声のスケジューリングを分けて、体感の遅延を抑える。
 
 ## 今後の候補（未実装）

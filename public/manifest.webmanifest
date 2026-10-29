@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Harmonic Bench",
+  "short_name": "Harmonic Bench",
+  "description": "鍵盤で音を鳴らしながら、和音名・周波数・音程を確かめられる音楽理論の実験アプリ",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f3ee",
+  "theme_color": "#f5f3ee",
+  "categories": ["education", "music"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

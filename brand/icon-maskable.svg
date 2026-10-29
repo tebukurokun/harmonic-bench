@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Harmonic Bench</title>
+  <!-- 全面を塗り、絵柄は中央 80% のセーフゾーンに収める（maskable・apple-touch-icon 用） -->
+  <rect width="32" height="32" fill="#1f2a44"/>
+  <g transform="translate(16 16) scale(0.85) translate(-16 -16)">
+    <rect x="5" y="7" width="6" height="18" rx="1" fill="#fff"/>
+    <rect x="13" y="7" width="6" height="18" rx="1" fill="#fff"/>
+    <rect x="21" y="7" width="6" height="18" rx="1" fill="#f2b84b"/>
+    <rect x="9" y="7" width="4" height="11" rx="1" fill="#1f2a44"/>
+    <rect x="19" y="7" width="4" height="11" rx="1" fill="#1f2a44"/>
+  </g>
+</svg>
