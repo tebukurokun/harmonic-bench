@@ -72,6 +72,8 @@ tests/           Vitest のテスト
 
 ## 公開
 
+公開URL: https://harmonic-bench.tebukuro.me/
+
 `npm run build` で生成される `dist/` は静的ファイルのみで構成されており、Cloudflare Pages などの静的ホスティングにそのまま配置できます（ビルドコマンド `npm run build`、出力ディレクトリ `dist`）。
 iOS Safari などでは音声再生に HTTPS（または localhost）が必要です。
 
@@ -93,7 +95,8 @@ iOS Safari などでは音声再生に HTTPS（または localhost）が必要�
 | `npm run test`（241件） / `npm run build` / `npm run check`（Biome） | 成功                                                                                                                                                                                                                                                                                                                                                                     |
 | デスクトップ Chrome（ヘッドレス、Playwright で自動操作）             | 確認済み。最初のクリックで AudioContext が `running` になる、Cm7 の判定表示、和音再生中に出力信号がある・終了後に無音に戻る、6音色すべてでピーク0.6未満（クリッピングなし）、マウスを鍵盤外へ動かしてから離しても停止する、PCキーの同時押し（Z+C+B → C）、30回の連打後にオシレーターが残らない、音量0で無音、幅375pxでページが横スクロールしない（鍵盤のみ横スクロール） |
 | 実際の聴こえ方（スピーカー出力）                                     | **未確認**。自動検証では出力信号のレベルのみ測定しています                                                                                                                                                                                                                                                                                                               |
-| Firefox / Safari / iOS Safari / Android Chrome                       | **未確認**。手動での確認が必要です                                                                                                                                                                                                                                                                                                                                       |
+| デスクトップ Firefox / Safari                                        | 確認済み（動作のみ）                                                                                                                                                                                                                                                                                                                                                     |
+| iOS Safari / Android Chrome                                          | **未確認**。手動での確認が必要です                                                                                                                                                                                                                                                                                                                                       |
 
 ## 残課題（v2 に進む前に）
 
