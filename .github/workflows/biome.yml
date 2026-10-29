@@ -1,0 +1,25 @@
+name: Biome
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biome-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  biome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # package.json / package-lock.json に固定した Biome のバージョンを使う
+      - uses: biomejs/setup-biome@v2
+      - run: biome ci .
