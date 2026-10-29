@@ -230,7 +230,7 @@ interface AudioEngine {
 - HTTPS（または localhost）で配信する。iOS Safari などでは音声再生に必要。
 - ライセンスが不明なサンプル音源は組み込まない。
 - OGP: `index.html` に OGP と Twitter Card（`summary_large_image`）のメタタグを置く。URL は公開URLの絶対パス。画像 `public/og-image.png`（1200×630）はタイトル・判定表示（Cmaj7 と波形）・鍵盤の度数表示だけで、説明文は入れない。
-- PWA: `public/manifest.webmanifest`（`display: standalone`、アイコン 192・512・maskable 512・SVG）と apple-touch-icon（180）。favicon は SVG と、SVG を使えないブラウザ向けの `favicon.ico`。
+- PWA: `public/manifest.webmanifest`（`display: standalone`、アイコン 192・512・maskable 512・SVG）と apple-touch-icon（180）。favicon は SVG と、SVG を使えないブラウザ向けの `favicon.ico`。SVG の favicon は、ダークモード（`prefers-color-scheme: dark`）のときだけ薄い縁取りを出す（暗いタブバーで濃紺の背景が溶けるため。Safari など SVG 内のメディアクエリが効かない環境では縁取りなし）。rsvg-convert はこのメディアクエリを無視するので、書き出す PNG・ICO は縁取りなしになる。
 - Service Worker: `vite.config.ts` の `serviceWorker()` プラグインが、ビルド後の `dist/` の全ファイル（`sw.js`・`og-image.png`・`_` で始まるファイルを除く）を事前キャッシュ一覧として `src/sw.js` に埋め込み、`dist/sw.js` を書き出す。版はファイルの中身のハッシュ。`index.html` は `/` としてキャッシュする（Cloudflare が `/index.html` を `/` へリダイレクトするため）。ページ遷移はネットワーク優先でオフライン時だけキャッシュ、それ以外はキャッシュ優先。登録は `main.tsx` で本番ビルドのときだけ行う。依存（vite-plugin-pwa 等）は増やさない。
 - アイコンや OGP 画像を変えたら、`brand/` の SVG を直して `./scripts/render-images.sh` を実行する（rsvg-convert と ImageMagick が必要）。
 - 低遅延は保証しない（ブラウザ・端末に依存する）。React state と音声のスケジューリングを分けて、体感の遅延を抑える。
