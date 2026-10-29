@@ -803,6 +803,7 @@ fieldset {
   }
 }
 
+/* スマートフォン: 鍵盤以外を詰めて、鍵盤と判定結果を画面に収めやすくする */
 @media (max-width: 560px) {
   .app {
     padding: 12px;
@@ -811,14 +812,103 @@ fieldset {
   .app-header {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
   }
 
-  .controls--header {
-    justify-content: space-between;
+  .brand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+  }
+
+  .brand h1 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+
+  .brand__tagline {
+    font-size: 0.75rem;
+  }
+
+  /* モード切替と音量、音色とオクターブをそれぞれ1行に並べる（幅が足りなければ折り返す） */
+  .controls--header,
+  .controls--sound {
+    gap: 8px 12px;
+  }
+
+  .segmented__button {
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 10px;
+  }
+
+  /* 基準幅を下回る画面（幅320pxなど）でだけ次の行へ回す */
+  .volume {
+    flex: 1 0 140px;
+    min-width: 0;
+    gap: 6px;
   }
 
   .volume input {
-    width: 96px;
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .field {
+    flex: 1 0 140px;
+    min-width: 0;
+  }
+
+  /* 選んだ音色名で伝わるため、「音色」の文字は見た目だけ省く（読み上げのラベルには残す） */
+  .field > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .field select {
+    flex: 1;
+    min-width: 0;
+    padding: 0 6px;
+  }
+
+  .octave {
+    gap: 4px;
+  }
+
+  /* 「−」「＋」と音域の表示で伝わるため、見出しの文字は省く（fieldset の aria-label は残る） */
+  .octave__title {
+    display: none;
+  }
+
+  .octave__range {
+    min-width: 4.5em;
+  }
+
+  .mode-hint {
+    margin: 8px 0 6px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .scope {
+    margin-bottom: 8px;
+    padding: 6px 8px 4px;
+  }
+
+  .scope__screen {
+    height: 60px;
+  }
+
+  .scope__caption {
+    margin-top: 2px;
   }
 
   /* 鍵盤が低くなるため、度数を出す白鍵では PCキーの表示を省き、黒鍵と重ならないようにする */
@@ -826,21 +916,94 @@ fieldset {
     display: none;
   }
 
+  /* 1行目に「鳴らし続ける」と選択数、2行目に「和音を再生」「全解除」を並べる */
+  .chord-actions {
+    gap: 8px;
+    margin-top: 8px;
+  }
+
   .chord-actions .button {
-    flex: 1 1 0;
+    flex: 1 1 40%;
+    min-height: 40px;
   }
 
   .chord-actions .button--toggle {
-    flex-basis: 100%;
-    justify-content: center;
+    flex: 0 0 auto;
+    gap: 6px;
+    padding: 0 12px;
   }
 
+  /* 選択数はフォーカスされない文字なので、表示順だけ入れ替えてもキーボード操作の順は変わらない */
   .chord-actions__count {
-    flex-basis: 100%;
+    order: 0;
+    margin-left: auto;
+  }
+
+  .chord-actions .button:not(.button--toggle) {
+    order: 1;
+  }
+
+  .messages {
+    margin-top: 8px;
+  }
+
+  .analysis {
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .result {
+    gap: 8px 24px;
+    min-height: 88px;
+    padding: 10px 14px;
   }
 
   .result__symbol {
     font-size: 2rem;
+  }
+
+  .panel {
+    padding-top: 10px;
+  }
+
+  .panel__title {
+    margin-bottom: 4px;
+  }
+
+  .panel__subtitle {
+    margin: 12px 0 4px;
+  }
+
+  .notes-table {
+    font-size: 0.875rem;
+  }
+
+  .notes-table th,
+  .notes-table td {
+    padding: 4px 8px;
+  }
+
+  .structure {
+    font-size: 1rem;
+  }
+
+  .interval-list {
+    gap: 2px;
+  }
+
+  .interval-list__notes {
+    min-width: 7em;
+  }
+
+  .app-footer {
+    margin-top: 16px;
+  }
+}
+
+/* PCキーボードがない端末（スマートフォン・タブレット）では、PCキーの案内を出さない */
+@media (hover: none) and (pointer: coarse) {
+  .key-guide {
+    display: none;
   }
 }
 
