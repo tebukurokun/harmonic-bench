@@ -46,6 +46,11 @@ export default function App({ audioEngine }: Props) {
   const analysis = useMemo(() => analyzeNotes(analysisTarget), [analysisTarget])
   const selectedSet = useMemo(() => new Set(selectedMidiNotes), [selectedMidiNotes])
   const heldSet = useMemo(() => new Set(heldMidiNotes), [heldMidiNotes])
+  const degrees = useMemo(
+    () =>
+      new Map(analysis.notes.flatMap((note) => (note.role ? [[note.midi, note.role.symbol]] : []))),
+    [analysis],
+  )
 
   const octaveEnd = octaveStart + VISIBLE_KEY_COUNT - 1
   const rangeLabel = `${defaultPitchName(octaveStart)}–${defaultPitchName(octaveEnd)}`
@@ -196,7 +201,7 @@ export default function App({ audioEngine }: Props) {
       <header className="app-header">
         <div className="brand">
           <h1>Harmonic Bench</h1>
-          <p className="brand__tagline">音を鳴らして、和音のしくみを確かめる</p>
+          <p className="brand__tagline">和音を読み解く鍵盤</p>
         </div>
         <ModeVolumeControls
           mode={mode}
@@ -230,6 +235,7 @@ export default function App({ audioEngine }: Props) {
             mode={mode}
             selected={mode === 'chord' ? selectedSet : NO_NOTES}
             held={heldSet}
+            degrees={degrees}
             rangeLabel={rangeLabel}
             onPress={pressNote}
             onRelease={releaseNote}
@@ -249,6 +255,7 @@ export default function App({ audioEngine }: Props) {
                 aria-pressed={sustain}
                 onClick={toggleSustain}
               >
+                <span className="led" aria-hidden="true" />
                 鳴らし続ける
                 <span className="button__state" aria-hidden="true">
                   {sustain ? 'オン' : 'オフ'}

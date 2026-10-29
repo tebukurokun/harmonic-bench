@@ -30,6 +30,7 @@ export function ModeVolumeControls({
             aria-pressed={mode === m.id}
             onClick={() => onModeChange(m.id)}
           >
+            <span className="led" aria-hidden="true" />
             {m.labelJa}
           </button>
         ))}

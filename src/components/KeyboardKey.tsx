@@ -13,6 +13,8 @@ interface Props {
   mode: Mode
   selected: boolean
   held: boolean
+  /** 根音からの度数記号（和音として判定できたときのみ） */
+  degree?: string
   style?: CSSProperties
   onPress: (midi: number, sourceId: string) => void
   onRelease: (midi: number, sourceId: string) => void
@@ -29,6 +31,7 @@ export function KeyboardKey({
   mode,
   selected,
   held,
+  degree,
   style,
   onPress,
   onRelease,
@@ -76,6 +79,14 @@ export function KeyboardKey({
       {selected && (
         <span className="key__marker" aria-hidden="true">
           ●
+        </span>
+      )}
+      {degree && (
+        <span
+          className={`key__degree${degree === 'R' ? ' key__degree--root' : ''}`}
+          aria-hidden="true"
+        >
+          {degree}
         </span>
       )}
       {hint && (

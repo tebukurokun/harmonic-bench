@@ -11,6 +11,8 @@ interface Props {
   mode: Mode
   selected: ReadonlySet<number>
   held: ReadonlySet<number>
+  /** 和音として判定できたときの、MIDI番号ごとの度数記号（例: R, ♭3） */
+  degrees: ReadonlyMap<number, string>
   rangeLabel: string
   onPress: (midi: number, sourceId: string) => void
   onRelease: (midi: number, sourceId: string) => void
@@ -22,6 +24,7 @@ export function PianoKeyboard({
   mode,
   selected,
   held,
+  degrees,
   rangeLabel,
   onPress,
   onRelease,
@@ -49,6 +52,7 @@ export function PianoKeyboard({
         mode={mode}
         selected={selected.has(midi)}
         held={held.has(midi)}
+        degree={degrees.get(midi)}
         style={style}
         onPress={onPress}
         onRelease={onRelease}
@@ -58,14 +62,16 @@ export function PianoKeyboard({
   })
 
   return (
-    <div className="keyboard-scroll">
-      <fieldset
-        className="keyboard"
-        aria-label={`ピアノ鍵盤 ${rangeLabel}`}
-        style={{ ['--white-count' as string]: whiteCount }}
-      >
-        {keyElements}
-      </fieldset>
+    <div className="keyboard-case">
+      <div className="keyboard-scroll">
+        <fieldset
+          className="keyboard"
+          aria-label={`ピアノ鍵盤 ${rangeLabel}`}
+          style={{ ['--white-count' as string]: whiteCount }}
+        >
+          {keyElements}
+        </fieldset>
+      </div>
     </div>
   )
 }

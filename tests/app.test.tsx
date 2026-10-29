@@ -106,6 +106,18 @@ describe('App: 和音作成モード（初期モード）', () => {
     expect(screen.getByText(/短三和音に短7度を加えた和音/)).toBeInTheDocument()
   })
 
+  it('和音として判定できたときは、選択した鍵盤に根音からの度数を表示する', async () => {
+    const { user } = setup()
+    await selectNotes(user, ['C4', 'D♯4 / E♭4', 'G4'])
+    expect(within(key('C4')).getByText('R')).toBeInTheDocument()
+    expect(within(key('D♯4 / E♭4')).getByText('♭3')).toBeInTheDocument()
+    expect(within(key('G4')).getByText('5')).toBeInTheDocument()
+
+    // 和音でなくなると度数は消える
+    await user.click(key('G4'))
+    expect(within(key('C4')).queryByText('R')).not.toBeInTheDocument()
+  })
+
   it('2音のときは音程を主表示する', async () => {
     const { user } = setup()
     await selectNotes(user, ['C4', 'G4'])

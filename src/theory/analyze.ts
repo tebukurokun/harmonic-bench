@@ -24,7 +24,7 @@ export interface NoteInfo {
   name: string
   frequency: number
   /** 和音判定時の根音からの役割 */
-  role?: { label: string; semitonesFromRoot: number }
+  role?: { label: string; symbol: string; semitonesFromRoot: number }
 }
 
 export interface IntervalPair {
@@ -68,7 +68,11 @@ export function analyzeNotes(midiNotes: readonly number[]): Analysis {
       pitch,
       name: formatPitch(pitch),
       frequency: midiToFrequency(midi),
-      role: tone && { label: tone.degreeLabel, semitonesFromRoot: tone.semitonesFromRoot },
+      role: tone && {
+        label: tone.degreeLabel,
+        symbol: tone.degreeSymbol,
+        semitonesFromRoot: tone.semitonesFromRoot,
+      },
     }
   })
 

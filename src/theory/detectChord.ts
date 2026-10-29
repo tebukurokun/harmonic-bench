@@ -1,5 +1,6 @@
 import type { NoteSpelling } from '../types/music'
 import { CHORD_TEMPLATES, type ChordTemplate } from './chordTemplates'
+import { degreeSymbol } from './intervals'
 import {
   defaultSpelling,
   formatSpelling,
@@ -12,6 +13,8 @@ export interface ChordTone {
   pitchClass: number
   spelling: NoteSpelling
   degreeLabel: string
+  /** 度数の短い記号（例: R, ♭3, 5） */
+  degreeSymbol: string
   semitonesFromRoot: number
 }
 
@@ -76,6 +79,7 @@ function buildCandidate(template: ChordTemplate, rootPc: number, bassPc: number)
     pitchClass: pitchClass(rootPc + semitones),
     spelling: spellings[i],
     degreeLabel: template.degreeLabels[i],
+    degreeSymbol: degreeSymbol(template.letterSteps[i], semitones),
     semitonesFromRoot: semitones,
   }))
   const bassIndex = tones.findIndex((tone) => tone.pitchClass === bassPc)

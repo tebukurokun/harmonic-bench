@@ -76,8 +76,8 @@ export function ChordAnalysis({ analysis, mode }: Props) {
           <ul>
             {alternatives.map((candidate) => (
               <li key={candidate.symbol}>
-                <span className="chip">{candidate.symbol}</span>
-                <span className="chip__note">{candidate.nameJa}</span>
+                <span className="result__alt-symbol">{candidate.symbol}</span>
+                <span className="result__alt-name">{candidate.nameJa}</span>
               </li>
             ))}
           </ul>

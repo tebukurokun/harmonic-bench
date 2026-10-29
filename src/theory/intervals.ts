@@ -1,5 +1,5 @@
 import type { SpelledPitch } from '../types/music'
-import { NATURAL_PITCH_CLASSES } from './noteSpelling'
+import { accidentalSymbol, NATURAL_PITCH_CLASSES } from './noteSpelling'
 
 /** 綴りが分からないときに半音数（0〜11）から決める音程名 */
 const SEMITONE_INTERVAL_NAMES = [
@@ -109,4 +109,14 @@ export function intervalBetween(lower: SpelledPitch, upper: SpelledPitch): Inter
     spelled: true,
     ambiguous: false,
   }
+}
+
+/**
+ * 根音からの度数を鍵盤に載せる短い記号で表す（例: 根音 R、長3度 3、短3度 ♭3、増5度 ♯5、減7度 𝄫7）。
+ * 長音程・完全音程を基準にし、そこからの差を変化記号で示す。
+ */
+export function degreeSymbol(letterSteps: number, semitones: number): string {
+  const degreeIndex = letterSteps % 7
+  if (degreeIndex === 0 && semitones === 0) return 'R'
+  return `${accidentalSymbol(semitones - NATURAL_PITCH_CLASSES[degreeIndex])}${degreeIndex + 1}`
 }

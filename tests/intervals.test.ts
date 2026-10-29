@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { intervalBetween, intervalFromSemitones } from '../src/theory/intervals'
+import { CHORD_TEMPLATES } from '../src/theory/chordTemplates'
+import { degreeSymbol, intervalBetween, intervalFromSemitones } from '../src/theory/intervals'
 import { spellMidi, spellWithLetter } from '../src/theory/noteSpelling'
 import type { Letter } from '../src/types/music'
 
@@ -62,5 +63,29 @@ describe('intervalBetween（綴りを考慮）', () => {
 
   it('異名同音の同音は減2度などとして区別する', () => {
     expect(intervalBetween(pitch(60, 6), pitch(60, 0)).nameJa).toBe('減2度')
+  })
+})
+
+describe('degreeSymbol', () => {
+  it.each([
+    ['major', 'R 3 5'],
+    ['minor', 'R ♭3 5'],
+    ['dominant7', 'R 3 5 ♭7'],
+    ['major7', 'R 3 5 7'],
+    ['minor7', 'R ♭3 5 ♭7'],
+    ['diminished', 'R ♭3 ♭5'],
+    ['augmented', 'R 3 ♯5'],
+    ['halfDiminished7', 'R ♭3 ♭5 ♭7'],
+    ['diminished7', 'R ♭3 ♭5 𝄫7'],
+    ['major6', 'R 3 5 6'],
+    ['minor6', 'R ♭3 5 6'],
+    ['sus4', 'R 4 5'],
+    ['sus2', 'R 2 5'],
+  ])('%s の度数は %s', (id, expected) => {
+    const template = CHORD_TEMPLATES.find((t) => t.id === id)
+    const symbols = template?.intervals.map((semitones, i) =>
+      degreeSymbol(template.letterSteps[i], semitones),
+    )
+    expect(symbols?.join(' ')).toBe(expected)
   })
 })

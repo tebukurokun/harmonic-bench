@@ -5,21 +5,31 @@
   --text: #1d2433;
   --text-muted: #5b6372;
   --border: #d9d4c8;
-  --accent: #2f5bd3;
+  --accent: #c2410c;
   --accent-text: #ffffff;
-  --accent-soft: #dfe7fb;
+  --accent-soft: #fde3d0;
   --held: #e0892b;
   --held-soft: #fbe3c6;
   --danger: #b3261e;
   --danger-soft: #fbe2df;
-  --white-key: #ffffff;
-  --white-key-shade: #e6e2d8;
-  --black-key: #1e2230;
-  --black-key-shade: #3a4054;
+  /* 鍵盤のパネルはライト／ダークとも濃色にする（機材らしく見せるため） */
+  --case: #141821;
+  --case-top: #232937;
+  --case-edge: #2e3546;
+  --white-key: #fbfbfc;
+  --white-key-shade: #cfd3db;
+  --black-key: #12141b;
+  --black-key-shade: #353b4c;
+  /* 判定結果の表示部（LCD 風）もライト／ダークとも濃色にする */
+  --lcd-bg: #0c1317;
+  --lcd-edge: #26313a;
+  --lcd-text: #c6f1df;
+  --lcd-dim: #6e8c84;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --white-w: clamp(40px, calc((100vw - 64px) / 14), 64px);
   --black-w: calc(var(--white-w) * 0.62);
   --key-h: clamp(150px, 26vw, 220px);
-  --radius: 12px;
+  --radius: 4px;
 
   color-scheme: light dark;
   font-family:
@@ -39,16 +49,19 @@
     --text: #e8e9ee;
     --text-muted: #a3a8b6;
     --border: #363b49;
-    --accent: #7fa2ff;
-    --accent-text: #0f1424;
-    --accent-soft: #263257;
+    --accent: #ff9f4a;
+    --accent-text: #1f1305;
+    --accent-soft: #4a2a14;
     --held: #f2a65a;
     --held-soft: #4a3520;
     --danger: #ff8a80;
     --danger-soft: #45201d;
-    --white-key: #e9e7e1;
-    --white-key-shade: #c7c3b8;
-    --black-key: #0b0d12;
+    --case: #0a0c11;
+    --case-top: #171b25;
+    --case-edge: #282e3c;
+    --white-key: #e4e6eb;
+    --white-key-shade: #a9aebb;
+    --black-key: #07080b;
     --black-key-shade: #2a2f3c;
   }
 }
@@ -109,7 +122,9 @@ fieldset {
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
-  padding-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 .brand h1 {
@@ -131,27 +146,53 @@ fieldset {
   gap: 12px 20px;
 }
 
+/* 機材のスイッチ風のボタン。オンの状態は鍵盤と同じ LED の点灯で示す */
+.led {
+  --led: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  --led-glow: transparent;
+
+  flex: none;
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--led);
+  box-shadow: 0 0 6px 1px var(--led-glow);
+}
+
+[aria-pressed="true"] > .led {
+  --led: var(--accent);
+  --led-glow: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
 .segmented {
   display: inline-flex;
+  gap: 3px;
   padding: 3px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 
 .segmented__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-height: 40px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 999px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 2px;
   background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
 }
 
+/* 押し込まれた状態: LED の点灯に加え、面が浮き上がり文字が太くなる */
 .segmented__button[aria-pressed="true"] {
-  background: var(--accent);
-  color: var(--accent-text);
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
   font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
 }
 
 .volume,
@@ -177,7 +218,7 @@ fieldset {
   min-height: 40px;
   padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -198,7 +239,7 @@ fieldset {
   width: 40px;
   height: 40px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--surface);
   font-size: 1.125rem;
   cursor: pointer;
@@ -211,13 +252,6 @@ fieldset {
 }
 
 /* 楽器 */
-.instrument {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
 .mode-hint,
 .key-guide {
   margin: 12px 0 8px;
@@ -229,10 +263,22 @@ fieldset {
   margin-top: 8px;
 }
 
+/* 鍵盤: 濃色のパネルにはめ込んだシンセサイザー風 */
+.keyboard-case {
+  padding: 10px 10px 6px;
+  border: 1px solid var(--case-edge);
+  border-radius: var(--radius);
+  background: linear-gradient(to bottom, var(--case-top), var(--case));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 6px 16px rgb(0 0 0 / 0.18);
+}
+
 .keyboard-scroll {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   padding-bottom: 6px;
+  scrollbar-color: var(--case-edge) transparent;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -246,40 +292,102 @@ fieldset {
   -webkit-user-select: none;
 }
 
+/* 鍵盤の上端がパネルの縁の下に入り込んでいるように見せる影 */
+.keyboard::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 10px;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.45), transparent);
+  pointer-events: none;
+}
+
 .key {
+  --led: transparent;
+  --led-glow: transparent;
+
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding: 0 0 8px;
-  border: 1px solid var(--white-key-shade);
+  gap: 3px;
+  padding: 0 0 14px;
+  border: 0;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   transition:
     background-color 80ms,
+    box-shadow 120ms,
     transform 60ms;
 }
 
+/* 手前の縁に載せた LED ライン。選択・押下で点灯する */
+.key::after {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 3px;
+  left: 22%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--led);
+  box-shadow: 0 0 6px 1px var(--led-glow);
+}
+
+.key:focus-visible {
+  outline-offset: -6px;
+}
+
 .key--white {
+  --led: rgb(0 0 0 / 0.1);
+
   flex: 0 0 var(--white-w);
   height: 100%;
-  border-radius: 0 0 8px 8px;
-  background: linear-gradient(to bottom, var(--white-key) 85%, var(--white-key-shade));
+  /* 左右の透明な枠からパネルの色を見せ、鍵盤の間にすき間を作る */
+  border-inline: 1px solid transparent;
+  border-radius: 0 0 6px 6px;
+  background-color: var(--white-key);
+  background-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.1),
+    transparent 14%,
+    transparent 78%,
+    rgb(0 0 0 / 0.05)
+  );
+  background-clip: padding-box;
+  /* 手前の帯で鍵盤の厚みを表す */
+  box-shadow:
+    inset 0 -9px 0 var(--white-key-shade),
+    inset 0 -10px 0 rgb(255 255 255 / 0.5);
   color: #2a2f3c;
 }
 
 .key--black {
+  --led: rgb(255 255 255 / 0.08);
+
   position: absolute;
   top: 0;
   z-index: 1;
   width: var(--black-w);
   height: 62%;
-  border-color: var(--black-key);
-  border-radius: 0 0 6px 6px;
-  background: linear-gradient(to bottom, var(--black-key-shade), var(--black-key) 20%);
+  padding-bottom: 16px;
+  border-radius: 0 0 5px 5px;
+  /* 上面のつやと、手前の面（下端12%）を描き分ける */
+  background: linear-gradient(
+    to bottom,
+    var(--black-key),
+    var(--black-key-shade) 87%,
+    var(--black-key) 88%,
+    var(--black-key)
+  );
+  box-shadow:
+    inset 1px 0 0 rgb(255 255 255 / 0.07),
+    inset -1px 0 0 rgb(0 0 0 / 0.5),
+    0 4px 6px rgb(0 0 0 / 0.45);
   color: #f0f0f0;
 }
 
@@ -293,46 +401,116 @@ fieldset {
   font-size: 0.625rem;
   line-height: 1.2;
   opacity: 0.55;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
 }
 
 .key__marker {
   position: absolute;
-  top: 8px;
-  font-size: 0.75rem;
+  top: 14px;
+  font-size: 0.625rem;
   line-height: 1;
 }
 
-/* 選択状態（和音作成モード）: 色に加えてマーカーと太枠で示す */
+/* 根音からの度数（R・♭3・5 など）。根音は塗りの色を変える */
+.key__degree {
+  min-width: 2em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--case);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.key__degree--root {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.key--black .key__degree {
+  min-width: 0;
+  padding: 0 3px;
+  border: 1px solid rgb(255 255 255 / 0.75);
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.625rem;
+}
+
+.key--black .key__degree--root {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: var(--black-key);
+}
+
+/* 選択状態（和音作成モード）: 色に加えて太枠・●マーカー・LED の点灯で示す */
 .key.is-selected {
-  border-width: 3px;
-  border-color: var(--accent);
+  --led: var(--accent);
+  --led-glow: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .key--white.is-selected {
-  background: linear-gradient(to bottom, var(--accent-soft) 85%, var(--white-key-shade));
+  background-color: color-mix(in srgb, var(--accent) 20%, var(--white-key));
+  box-shadow:
+    inset 0 0 0 3px var(--accent),
+    inset 0 -9px 0 color-mix(in srgb, var(--accent) 35%, var(--white-key-shade)),
+    inset 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .key--black.is-selected {
-  background: linear-gradient(to bottom, var(--accent), #1b3687 60%);
+  --led: #ffffff;
+  --led-glow: var(--accent);
+
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 35%, var(--black-key)),
+    color-mix(in srgb, var(--accent) 65%, var(--black-key)) 87%,
+    color-mix(in srgb, var(--accent) 40%, var(--black-key)) 88%
+  );
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--accent) 45%, #ffffff),
+    0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
-.key--white.is-selected .key__marker {
+.key.is-selected .key__marker {
   color: var(--accent);
+  text-shadow: 0 0 6px var(--accent);
 }
 
-/* 押下状態（演奏モード）: 沈み込みと色で示す */
+.key--black.is-selected .key__marker {
+  color: #ffffff;
+}
+
+/* 押下状態（演奏モード）: 沈み込み（手前の帯が薄くなる）と色で示す */
 .key.is-held {
+  --led: var(--held);
+  --led-glow: color-mix(in srgb, var(--held) 75%, transparent);
+
   transform: translateY(2px);
-  box-shadow: inset 0 4px 8px rgb(0 0 0 / 0.25);
 }
 
 .key--white.is-held {
-  background: linear-gradient(to bottom, var(--held-soft), #f3c48d);
+  background-color: color-mix(in srgb, var(--held) 30%, var(--white-key));
+  box-shadow:
+    inset 0 -4px 0 color-mix(in srgb, var(--held) 40%, var(--white-key-shade)),
+    inset 0 4px 8px rgb(0 0 0 / 0.2),
+    inset 0 0 18px color-mix(in srgb, var(--held) 45%, transparent);
 }
 
 .key--black.is-held {
-  background: linear-gradient(to bottom, var(--held), #8c4a10 70%);
+  --led: #ffffff;
+  --led-glow: var(--held);
+
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--held) 35%, var(--black-key)),
+    color-mix(in srgb, var(--held) 70%, var(--black-key)) 94%,
+    color-mix(in srgb, var(--held) 40%, var(--black-key)) 95%
+  );
+  box-shadow:
+    inset 0 4px 8px rgb(0 0 0 / 0.35),
+    0 0 16px color-mix(in srgb, var(--held) 60%, transparent);
 }
 
 .chord-actions {
@@ -352,7 +530,7 @@ fieldset {
   min-height: 44px;
   padding: 0 20px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   font-weight: 600;
   cursor: pointer;
@@ -371,22 +549,15 @@ fieldset {
 }
 
 .button__state {
-  min-width: 2.5em;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--surface-2);
+  min-width: 2em;
   color: var(--text-muted);
   font-size: 0.75rem;
+  text-align: left;
 }
 
-/* オン状態: 色に加えて表示文字（オン／オフ）でも示す */
-.button--toggle[aria-pressed="true"] {
-  border-color: var(--accent);
-}
-
+/* オン状態: LED の点灯に加えて表示文字（オン／オフ）でも示す */
 .button--toggle[aria-pressed="true"] .button__state {
-  background: var(--accent);
-  color: var(--accent-text);
+  color: var(--text);
 }
 
 .messages {
@@ -396,7 +567,7 @@ fieldset {
 .message {
   margin: 0 0 6px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--accent-soft);
   font-size: 0.875rem;
 }
@@ -409,8 +580,8 @@ fieldset {
 /* 分析結果 */
 .analysis {
   display: grid;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 24px 40px;
+  margin-top: 24px;
 }
 
 /* 表などの中身でグリッドが広がり、ページが横スクロールしないようにする */
@@ -418,33 +589,36 @@ fieldset {
   min-width: 0;
 }
 
-.result,
-.panel {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
+/* 判定結果: 機材の表示部（LCD）風。枠付きの箱にするのはここだけ */
 .result {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 32px;
+  gap: 12px 48px;
   align-items: flex-start;
+  min-height: 116px;
+  padding: 16px 20px;
+  border: 1px solid var(--lcd-edge);
+  border-radius: var(--radius);
+  background: var(--lcd-bg);
+  box-shadow: inset 0 2px 10px rgb(0 0 0 / 0.55);
+  color: var(--lcd-text);
 }
 
 .result__label {
   margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: var(--lcd-dim);
 }
 
 .result__symbol {
   margin: 0;
-  font-size: 2.25rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 600;
   line-height: 1.2;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--lcd-text) 35%, transparent);
 }
 
 .result__sub {
@@ -459,40 +633,45 @@ fieldset {
 
 .result__placeholder {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--lcd-dim);
 }
 
 .result__alternatives ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  gap: 2px;
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .result__alternatives li {
-  display: inline-flex;
+  display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 10px;
 }
 
-.chip {
-  padding: 2px 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
+.result__alt-symbol {
+  min-width: 5ch;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
-.chip__note {
+.result__alt-name {
   font-size: 0.8125rem;
-  color: var(--text-muted);
+  color: var(--lcd-dim);
+}
+
+/* 構成音・解説は箱にせず、上の罫線で区切る */
+.panel {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
 .panel__title {
   margin: 0 0 8px;
-  font-size: 1rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
 }
 
 .panel__subtitle {
@@ -532,6 +711,8 @@ fieldset {
 }
 
 .num {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -612,8 +793,9 @@ fieldset {
     width: 96px;
   }
 
-  .instrument {
-    padding: 12px;
+  /* 鍵盤が低くなるため、度数を出す白鍵では PCキーの表示を省き、黒鍵と重ならないようにする */
+  .key--white .key__degree + .key__hint {
+    display: none;
   }
 
   .chord-actions .button {
@@ -630,7 +812,7 @@ fieldset {
   }
 
   .result__symbol {
-    font-size: 1.875rem;
+    font-size: 2rem;
   }
 }
 
